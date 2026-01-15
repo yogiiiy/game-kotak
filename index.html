@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Kotak</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      background: #000;
+      border: 2px solid #444;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="400" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const player = {
+      x: 180,
+      y: 500,
+      size: 40,
+      speed: 5
+    };
+    const enemy = {
+    x: Math.random() * 360,
+    y: -40,
+    size: 40,
+    speed: 6
+    };
+
+    const keys = {};
+
+    let skor = 0;
+
+    window.addEventListener("keydown", e => {
+      keys[e.key] = true;
+    });
+
+    window.addEventListener("keyup", e => {
+      keys[e.key] = false;
+    });
+
+    let gameOver = false;
+    
+    function resetGame(){
+      // ini tombol buat reset
+      if (keys["r"] && gameOver) {
+        player.x = 180
+        player.y = 500
+        enemy.x = Math.random() * 360
+        enemy.y = -40
+        skor = 0
+        gameOver = false
+        enemy.speed = 6 // ngebalikin speed musuh ke semula
+      }
+    }
+
+    function updateEnemy () {
+       enemy.y += enemy.speed;
+       if (enemy.y > canvas.height) {
+        skor++;
+
+       // ini buat level semakin naik
+       if (skor % 10 === 0) {
+        enemy.speed += 1
+      }
+      enemy.x = Math.random() * 360;
+      enemy.y = -40;
+      }
+       
+    }
+
+    function updatePlayer() {
+      if (keys["a"] || keys["ArrowLeft"]) player.x -= player.speed;
+      if (keys["d"] || keys["ArrowRight"]) player.x += player.speed;
+      if (keys["w"] || keys["ArrowUp"]) player.y -= player.speed;
+      if (keys["s"] || keys["ArrowDown"]) player.y += player.speed;
+
+      // batas layar
+      player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+    }
+
+    function checkCollision() {
+      if (
+       player.x < enemy.x + enemy.size &&
+       player.x + player.size > enemy.x &&
+       player.y < enemy.y + enemy.size &&
+       player.y + player.size > enemy.y
+      ) {
+          gameOver = true;
+      }
+    }
+
+    function update() {
+      // buat reset game
+      if (keys["r"] && gameOver) resetGame()
+
+      if (gameOver) return;
+
+      // buat update enemy
+      updateEnemy()
+
+      // buat update status player
+      updatePlayer()
+
+      // buat update collision
+      checkCollision()
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+      ctx.fillStyle = "red";
+      ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+      
+      // buat nampilin skor
+      ctx.fillStyle = "red"
+      ctx.font = "30px Arial"
+      ctx.textAlign = "left"
+      ctx.fillText("SCORE : " + skor, canvas.width / 10, canvas.height / 10)
+      
+      if (gameOver) {
+      ctx.fillStyle = "white";
+      ctx.font = "40px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+    }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  
+  </script>
+</body>
+</html>
