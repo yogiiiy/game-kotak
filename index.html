@@ -25,17 +25,36 @@
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
 
+    const CONFIG = {
+      PLAYER_START_X: 180,
+      PLAYER_START_Y: 500,
+      PLAYER_SIZE: 40,
+      PLAYER_SPEED: 5,
+
+      ENEMY_START_Y: -40,
+      ENEMY_SIZE: 40,
+      ENEMY_SPEED: 6,
+      
+      LEVEL_UP_SCORE: 10
+    }
+
+    const GAME_STATE = {
+      READY: "ready",
+      PLAYING: "playing",
+      GAME_OVER: "game_over"
+    }
+
     const player = {
-      x: 180,
-      y: 500,
-      size: 40,
-      speed: 5
+      x: CONFIG.PLAYER_START_X,
+      y: CONFIG.PLAYER_START_Y,
+      size: CONFIG.PLAYER_SIZE,
+      speed: CONFIG.PLAYER_SPEED
     };
     const enemy = {
-    x: Math.random() * 360,
-    y: -40,
-    size: 40,
-    speed: 6
+    x: 0,
+    y: CONFIG.ENEMY_START_Y,
+    size: CONFIG.ENEMY_SIZE,
+    speed: CONFIG.ENEMY_SPEED
     };
 
     const keys = {};
@@ -50,19 +69,22 @@
       keys[e.key] = false;
     });
 
-    let gameOver = false;
+    let currentState = GAME_STATE.READY;
     
     function resetGame(){
-      // ini tombol buat reset
-      if (keys["r"] && gameOver) {
-        player.x = 180
-        player.y = 500
-        enemy.x = Math.random() * 360
-        enemy.y = -40
+        player.x = CONFIG.PLAYER_START_X
+        player.y = CONFIG.PLAYER_START_Y
+        enemy.x = Math.random() * (canvas.width - enemy.size)
+        enemy.y = CONFIG.ENEMY_START_Y
+        
         skor = 0
-        gameOver = false
-        enemy.speed = 6 // ngebalikin speed musuh ke semula
-      }
+        currentState = GAME_STATE.PLAYING
+        enemy.speed = CONFIG.ENEMY_SPEED // ngebalikin speed musuh ke semula   
+    }
+
+    function resetEnemy () {
+      enemy.x = Math.random() * (canvas.width - enemy.size)
+      enemy.y = CONFIG.ENEMY_START_Y
     }
 
     function updateEnemy () {
@@ -71,14 +93,13 @@
         skor++;
 
        // ini buat level semakin naik
-       if (skor % 10 === 0) {
+       if (skor % CONFIG.LEVEL_UP_SCORE === 0) {
         enemy.speed += 1
       }
-      enemy.x = Math.random() * 360;
-      enemy.y = -40;
+      resetEnemy()
       }
        
-    }
+    } 
 
     function updatePlayer() {
       if (keys["a"] || keys["ArrowLeft"]) player.x -= player.speed;
@@ -98,15 +119,25 @@
        player.y < enemy.y + enemy.size &&
        player.y + player.size > enemy.y
       ) {
-          gameOver = true;
+          currentState = GAME_STATE.GAME_OVER;
       }
     }
 
     function update() {
-      // buat reset game
-      if (keys["r"] && gameOver) resetGame()
 
-      if (gameOver) return;
+      // buat start game
+      if (currentState === GAME_STATE.READY) {
+        if (keys[" "] || keys["Space"]) {
+          currentState = GAME_STATE.PLAYING
+        }
+        return
+      }
+
+      // buat reset game
+      if (currentState === GAME_STATE.GAME_OVER) {
+        if (keys["r"]) resetGame()
+        return
+      }
 
       // buat update enemy
       updateEnemy()
@@ -124,19 +155,65 @@
       ctx.fillRect(player.x, player.y, player.size, player.size);
       ctx.fillStyle = "red";
       ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+
+      drawScore()
+
+      if (currentState === GAME_STATE.GAME_OVER) {
+        drawGameOver()
+      }
       
+      if (currentState === GAME_STATE.READY) {
+        drawGameStart()
+      }
+    }
+
+    function drawScore() {
       // buat nampilin skor
       ctx.fillStyle = "red"
       ctx.font = "30px Arial"
       ctx.textAlign = "left"
       ctx.fillText("SCORE : " + skor, canvas.width / 10, canvas.height / 10)
+    }
+
+    function drawGameOver() {
+      ctx.save()
       
-      if (gameOver) {
+
+      ctx.globalAlpha = 0.7 
+      ctx.fillStyle = "blue"
+      ctx.fillRect(0, 0, 400, 600)
+
+      drawScore()
+
+
       ctx.fillStyle = "white";
       ctx.font = "40px Arial";
       ctx.textAlign = "center";
       ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+
+      ctx.font = "20px Arial"
+      ctx.fillText(
+        `Press "R" to Restart`,
+        canvas.width / 2,
+        canvas.height / 2 + 40
+      )
+
+      ctx.restore()
     }
+
+    function drawGameStart() {
+      ctx.save()
+
+      ctx.fillStyle = "white"
+      ctx.font = "25px Arial"
+      ctx.textAlign = "center"
+      ctx.fillText(
+        "Press SPACE to Start the Game",
+        canvas.width / 2,
+        canvas.height / 2
+      )
+
+      ctx.restore()
     }
 
     function loop() {
